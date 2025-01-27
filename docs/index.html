@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Chrome AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        
+        textarea {
+            width: 90%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        
+        #talks {
+            padding: 8px;
+            font-size: 18px;
+        }
+        
+        #talks span {
+            display: block;
+            margin: 5px;
+            border-radius: 10px;
+        }
+        
+        .me {
+            display: grid !important;
+            justify-content: end;
+        }
+        
+        .other {
+            display: grid !important;
+            justify-content: start;
+        }
+        
+        .me>span {
+            white-space: pre-wrap;
+            background-color: antiquewhite;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .other>span {
+            background-color: skyblue;
+            white-space: pre-wrap;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .loading {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            border-top-color: #666;
+            animation: spin 1s linear infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Chrome AI System Prompt</h1>
+    <p>You need Chrome <b>Optimization Guide On Device Model</b> enabled. Follow <a href="https://www.chromeai.org/">this
+            link</a></p>
+    <p>Currently, this language capabilities are grounded in English, but don't worry - it's all yours to explore offline, too! When you're not connected to the internet, this AI uses the power of Google's Gemini Nano to generate content, and it's working
+        beautifully for many tasks.</p>
+    <h2>System Prompt</h2>
+    <textarea id="textarea1" placeholder="Enter System Prompt here..." cols="50"></textarea>
+
+    <h2>Prompt (Ctrl+Enter)</h2>
+    <textarea id="textarea2" placeholder="Enter prompt here..."></textarea>
+    <div id="html_loading" class="loading" style="display: none;"></div>
+    <div id='talks'>
+        <!--This will be added by JavaScript -->
+    </div>
+</body>
+<script>
+    const textarea1 = document.getElementById('textarea1');
+    const textarea2 = document.getElementById('textarea2');
+    window.textarea2.onkeyup = (ev) => {
+        if (ev.key === 'Enter' && event.ctrlKey) {
+            doAI()
+        }
+    }
+    let session = null;
+
+    async function doAI() {
+        const txt = textarea2.value
+        if (txt.length === 0) {
+            alert("Please enter a prompt")
+            return
+        }
+        addMessage(txt, true).then(() => {
+            textarea2.value = '';
+        });
+        html_loading.style.display = 'block';
+        let response
+        if (!session) {
+            textarea1.disabled = true
+            let initialPrompt = (textarea1.value.length === 0) || "" === textarea1.value ? {} : {
+                systemPrompt: textarea1.value
+            };
+            initialPrompt.temperature = 0.9
+            initialPrompt.topK = 15
+            session = await ai.languageModel.create(initialPrompt);
+            response = await session.prompt(txt)
+        } else {
+            response = await session.prompt(txt);
+        }
+
+        addMessage(response).then(() => {
+            html_loading.style.display = 'none';
+        });
+    }
+
+    async function addMessage(msg, me = false) {
+        let talk = document.createElement('span');
+        if (me) {
+            talk.classList.add('me');
+        } else {
+            talk.classList.add('other');
+        }
+
+        innerSpan = document.createElement('span');
+        innerSpan.innerText = `${new Date().toLocaleTimeString()}\n${msg}\n`
+        talk.appendChild(innerSpan);
+        // Add peer's message
+        talks.insertBefore(talk, talks.firstChild);
+    }
+    const text_not_ready = "Your browser doesn't support Chrome AI"
+    try {
+        if (!window.ai || !window.ai.languageModel || !window.ai.languageModel.capabilities) {
+            alert(text_not_ready);
+        } else {
+            window.ai.languageModel.capabilities().then((capabilities) => {
+                if (capabilities.available !== 'readily') {
+                    alert(text_not_ready);
+                }
+            })
+        }
+    } catch (e) {
+        console.log(e)
+        alert(text_not_ready);
+    }
+    textarea2.focus();
+</script>
+
+</html>
